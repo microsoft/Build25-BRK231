@@ -1,0 +1,313 @@
+﻿@* Copyright (c) Microsoft Corporation. 
+Licensed under the MIT license. *@
+
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Woodgrove Groceries";
+}
+
+@section Jumbotron {
+    <!-- Welcome message-->
+    <div class="inner-header">
+        <div class="jumbotron" style="margin-top: 20px;">
+            <div class="container">
+                <div class="row align-items-center">
+                    <h1 class="h2"
+                        style="margin-bottom: 5px; margin-top: -10px; text-shadow: 1px 1px 10px rgb(3, 80, 2);">Welcome to
+                        Woodgrove Groceries</h1>
+                </div>
+                <div class="row align-items-center" style="padding-top: 20px;">
+                    <div class="col lead" style="text-align: left;">
+                        <span style="letter-spacing: 0.1px;">
+                            <b>Woodgrove Groceries</b> ofrece una amplia selección de productos frescos y de alta calidad. 
+                            Nuestra misión es proporcionar alimentos saludables y deliciosos para nuestros clientes.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Welcome message end-->
+}
+
+<!-- Numbers -->
+<div id="numbers" class="col-lg-9 z-index-2 border-radius-xl mt-n10 mx-auto py-1 blur shadow-blur homepage-numbers"
+    style="width: 100%;">
+    <div class="row">
+        <div class="col-md-4 position-relative">
+            <div class="p-3 text-center">
+                <h2 class="number-text h1"> <span class="countup">1350</span>+</h2>
+                <h3 class="mt-3 h5">Tiendas</h3>
+                <p class="text-sm number-description">Con más de 1,350 tiendas locales y 80 centros de distribución,
+                    es más fácil que nunca comprar en línea y localmente.</p>
+            </div>
+            <hr class="vertical dark">
+        </div>
+        <div class="col-md-4 position-relative">
+            <div class="p-3 text-center">
+                <h2 class="number-text h1" id="num3" num="39"><span class="countup">7500</span>+</h2>
+                <h3 class="mt-3 h5">Productos</h3>
+                <p class="text-sm number-description">Ofrecemos una variedad de productos, alimentos frescos y saludables de alta calidad. 
+                    Amigables para tu billetera y una experiencia de compra dinámica.</p>
+            </div>
+            <hr class="vertical dark">
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 text-center">
+                <h2 class="number-text h1" id="num3" num="39"><span class="countup">3200</span>+</h2>
+                <h3 class="mt-3 h5">Empleados</h3>
+                <p class="text-sm number-description">Woodgrove está comprometido a construir una fuerza laboral diversa que
+                    refleje nuestros valores fundamentales y las comunidades a las que servimos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Numbers end-->
+
+<div class="" id="specials">
+    <div style="margin-bottom: 5px;">&nbsp;</div>
+
+    <div class="d-flex justify-content-between">
+        <div>
+            <div class="font-weight-bold h4" style="letter-spacing: 2px; color: rgb(3, 80, 2);">
+                <strong>Prepárate para comprar</strong>
+            </div>
+        </div>
+        <div>
+            <div id="checkoutContainer" style="display: none;"><i class="bi bi-cart4"></i> <span id="total">0</span>$ <a
+                    style="margin-left: 20px;" href="#" class="btn btn-warning" role="button" id="checkout"
+                    onclick="return checkout();">Pagar</a></div>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 10px;">&nbsp;</div>
+</div>
+
+<!--First line of products-->
+<div class="row" style="margin-top: -50px;">
+    <div class="col-sm">
+        <div class="card hp_card">
+            <div class="card-body">
+                <img class="card-img-top" src="~/images/Products/grapes.jpg" alt="Grapes">
+                <div class="card-title">Uvas moradas 1.5 kg</div>
+                <div class="row card-buttons">
+                    <div class="col card-price">
+                        $11.25
+                    </div>
+                    <div class="col text-end">
+                        <a href="#"
+                            class='btn btn-sm card-button @(User.Identity?.IsAuthenticated == true ? "" : "disabled")'
+                            onclick="return addItem(11.25)"><i class="bi bi-cart-plus"></i> Añadir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm">
+        <div class="card hp_card">
+            <div class="card-body">
+                <img class="card-img-top" src="~/images/Products/tomatoes.jpg" alt="Tomatoes">
+                <div class="card-title">Tomate dulce orgánico 1 kg</div>
+                <div class="row card-buttons">
+                    <div class="col card-price">
+                        $2.75
+                    </div>
+                    <div class="col text-end">
+                        <a href="#"
+                            class='btn btn-sm card-button @(User.Identity?.IsAuthenticated == true ? "" : "disabled")'
+                            onclick="return addItem(2.75)"><i class="bi bi-cart-plus"></i> Añadir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm">
+        <div class="card hp_card">
+            <div class="card-body">
+                <img class="card-img-top" src="~/images/Products/bread.jpg" alt="Breads">
+                <div class="card-title">Pan francés 400 g</div>
+                <div class="row card-buttons">
+                    <div class="col card-price">
+                        $13.0
+                    </div>
+                    <div class="col text-end">
+                        <a href="#"
+                            class='btn btn-sm card-button @(User.Identity?.IsAuthenticated == true ? "" : "disabled")'
+                            onclick="return addItem(13.0)"><i class="bi bi-cart-plus"></i> Añadir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Second line of products-->
+<div class="row">
+    <div class="col-sm">
+        <div class="card hp_card">
+            <div class="card-body">
+                <img class="card-img-top" src="~/images/Products/eggs.jpg" alt="Eggs">
+                <div class="card-title">Huevos orgánicos 12 unid.</div>
+                <div class="row card-buttons">
+                    <div class="col card-price">
+                        $34.0
+                    </div>
+                    <div class="col text-end">
+                        <a href="#"
+                            class='btn btn-sm card-button @(User.Identity?.IsAuthenticated == true ? "" : "disabled")'
+                            onclick="return addItem(34.0)"><i class="bi bi-cart-plus"></i> Añadir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm">
+        <div class="card hp_card">
+            <div class="card-body">
+                <img class="card-img-top" src="~/images/Products/corn.jpg" alt="Corns">
+                <div class="card-title">Maíz dulce 1 unid.</div>
+                <div class="row card-buttons">
+                    <div class="col card-price">
+                        $5.25
+                    </div>
+                    <div class="col text-end">
+                        <a href="#"
+                            class='btn btn-sm card-button @(User.Identity?.IsAuthenticated == true ? "" : "disabled")'
+                            onclick="return addItem(5.25)"><i class="bi bi-cart-plus"></i> Añadir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm">
+        <div class="card hp_card">
+            <div class="card-body">
+                <img class="card-img-top" src="~/images/Products/watermelon.jpg" alt="Watermelons">
+                <div class="card-title">Sandía 1 unid.</div>
+                <div class="row card-buttons">
+                    <div class="col card-price">
+                        $12.5
+                    </div>
+                    <div class="col text-end">
+                        <a href="#"
+                            class='btn btn-sm card-button @(User.Identity?.IsAuthenticated == true ? "" : "disabled")'
+                            onclick="return addItem(12.5)"><i class="bi bi-cart-plus"></i> Añadir</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="thanksModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-megaphone"></i> Pago completado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¡Gracias por tu pedido! Tu compra se ha completado. <b>¡Gracias por elegirnos!</b></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Waves {
+    <!--Waves Container-->
+    <div id="waves">
+        <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+            viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+            <defs>
+                <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+            </defs>
+            <g class="parallax">
+                <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7" />
+                <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+                <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+                <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
+            </g>
+        </svg>
+    </div>
+    <!--Waves end-->
+}
+
+@section Scripts {
+    <script>
+        var thanksModal;
+        $(document).ready(function () {
+            thanksModal = new bootstrap.Modal(document.getElementById('thanksModal'), {
+                keyboard: false
+            });
+        });
+
+        function addItem(price) {
+            var total = parseFloat($("#total").text()) + price;
+            $("#total").text(total.toFixed(2));
+            $("#checkoutContainer").show();
+
+            return false;
+        }
+
+        function checkout() {
+            $("#total").text(0);
+            $("#checkoutContainer").hide();
+
+            thanksModal.show();
+            window.location.hash = '';
+            const myTimeout = setTimeout(completeOrderHide, 5000);
+            
+            return false;
+        }
+
+        function completeOrderHide() {
+            thanksModal.hide();
+        }
+
+        // Calculate how long each 'frame' should last if we want to update the animation 60 times per second
+        const frameDuration = 15;
+        // Use that to calculate how many frames we need to complete the animation
+        const totalFrames = 120;
+        // An ease-out function that slows the count as it progresses
+        const easeOutQuad = t => t * (2 - t);
+
+        // The animation function, which takes an Element
+        const animateCountUp = el => {
+            let frame = 0;
+            const countTo = parseInt(el.innerHTML, 10);
+            // Start the animation running 60 times per second
+            const counter = setInterval(() => {
+                frame++;
+                // Calculate our progress as a value between 0 and 1
+                // Pass that value to our easing function to get our
+                // progress on a curve
+                const progress = easeOutQuad(frame / totalFrames);
+                // Use the progress value to calculate the current count
+                const currentCount = Math.round(countTo * progress);
+
+                // If the current count has changed, update the element
+                if (parseInt(el.innerHTML, 10) !== currentCount) {
+                    el.innerHTML = currentCount;
+                }
+
+                // If we've reached our last frame, stop the animation
+                if (frame === totalFrames) {
+                    clearInterval(counter);
+                }
+            }, frameDuration);
+        };
+
+        // Run the animation on all elements with a class of 'countup'
+        const runAnimations = () => {
+            const countupEls = document.querySelectorAll('.countup');
+            countupEls.forEach(animateCountUp);
+        };
+
+        runAnimations();
+    </script>
+}

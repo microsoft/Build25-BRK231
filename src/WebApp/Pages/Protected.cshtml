@@ -1,0 +1,584 @@
+@* Copyright (c) Microsoft Corporation. 
+Licensed under the MIT license. *@
+
+@page
+@using Microsoft.AspNetCore.Authorization
+@model WebAppConRazor.Pages.ProtectedModel
+@attribute [Authorize]
+
+<h1>Woodgrove Agent</h1>
+<p>This page is only accessible to authenticated users.</p>
+<p><a id="show-tokens-btn" class="btn btn-sm btn-info">
+    <i class="bi bi-key"></i> View Authentication Tokens
+</a></p>
+
+<style>
+    /* Estilos para el contenido Markdown en el chat */
+    .chat-message {
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 5px;
+    }
+    
+    .user-message {
+        background-color: #e6f7ff;
+        text-align: right;
+    }
+    
+    .assistant-message {
+        background-color: #f0f0f0;
+    }
+    
+    .system-message {
+        background-color: #fffde7;
+        font-style: italic;
+        color: #666;
+    }
+    
+    .error-message {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+    
+    /* Estilos para elementos de Markdown */
+    .chat-messages table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+    }
+    
+    .chat-messages th, .chat-messages td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    
+    .chat-messages th {
+        background-color: #f2f2f2;
+    }
+    
+    .chat-messages code {
+        font-family: Consolas, Monaco, monospace;
+        background-color: #f8f8f8;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.9em;
+    }
+    
+    .chat-messages pre {
+        background-color: #f8f8f8;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+        margin: 10px 0;
+    }
+    
+    .chat-messages ul, .chat-messages ol {
+        padding-left: 20px;
+    }
+    
+    .chat-messages blockquote {
+        border-left: 4px solid #ddd;
+        padding-left: 10px;
+        margin-left: 0;
+        color: #666;
+    }
+    
+    /* Estilos adicionales para mejorar responsividad */
+    .chat-container {
+        width: 80%;
+        max-width: 100%;
+        margin: 0; /* Cambiado de margin: 0 auto; para alinear a la izquierda */
+    }
+    
+    @@media (max-width: 992px) {
+        .chat-container {
+            width: 90%;
+        }
+    }
+    
+    @@media (max-width: 576px) {
+        .chat-container {
+            width: 100%;
+        }
+    }
+
+    /* Estilos para modal de tokens */
+    .tokens-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    
+    .tokens-modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 800px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .tokens-close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .tokens-close:hover,
+    .tokens-close:focus {
+        color: black;
+        text-decoration: none;
+    }
+    
+    .token-container {
+        margin-bottom: 20px;
+    }
+    
+    .token-textarea {
+        width: 100%;
+        min-height: 100px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .token-tabs {
+        display: flex;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .token-tab {
+        padding: 10px 15px;
+        cursor: pointer;
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        border-bottom: none;
+        border-radius: 5px 5px 0 0;
+        margin-right: 5px;
+    }
+    
+    .token-tab.active {
+        background: white;
+        border-bottom: 1px solid white;
+        margin-bottom: -1px;
+    }
+    
+    .token-content {
+        display: none;
+    }
+    
+    .token-content.active {
+        display: block;
+    }
+
+    /* MFA Modal Styles */
+    .mfa-modal {
+        display: none;
+        position: fixed;
+        z-index: 1100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .mfa-modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 600px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .mfa-close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .mfa-close:hover,
+    .mfa-close:focus {
+        color: black;
+        text-decoration: none;
+    }
+    
+    .mfa-loading {
+        text-align: center;
+        padding: 20px;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        @if (Model.NeedsConsent)
+        {
+            <div class="alert alert-warning">
+                <p>Your consent is required to access API resources. Please authorize access by clicking the button below.</p>
+                <form method="post" asp-page-handler="Consent">
+                    <button type="submit" class="btn btn-primary">Give Consent</button>
+                </form>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(Model.AccessToken))
+        {
+            <!-- Chat Widget -->
+            <div class="mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                </div>
+                
+                <div class="chat-container border p-3 rounded">
+                    <div id="connection-status"></div>
+
+                    <div id="chat-messages" class="chat-messages mb-3 border rounded" style="height: 400px; overflow-y: auto;">
+                        <!-- Messages will be added dynamically here -->
+                    </div>
+
+                    <div class="mb-2">
+                        <textarea id="message-input" class="form-control" rows="3" 
+                                placeholder="Type your message (Enter to send, Shift+Enter for new line)..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button id="send-button" class="btn btn-primary" title="Send message">
+                            <i class="bi bi-send-fill"></i> Send
+                        </button>
+
+                        <button id="reset-button" class="btn btn-secondary" title="Reset conversation">
+                            <i class="bi bi-arrow-clockwise"></i> Reset
+                        </button>
+
+                        <button id="stop-button" class="btn btn-warning" title="Stop Agent">
+                            <i class="bi bi-stop-fill"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal to display tokens -->
+            <div id="tokens-modal" class="tokens-modal">
+                <div class="tokens-modal-content">
+                    <span class="tokens-close">&times;</span>
+                    <h4>Authentication Tokens</h4>
+                    
+                    <div class="token-tabs">
+                        <div id="tab-access" class="token-tab active">Access Token</div>
+                        <div id="tab-id" class="token-tab">ID Token</div>
+                    </div>
+                    
+                    <div id="content-access" class="token-content active">
+                        <div class="token-container">
+                            <h5>Access Token</h5>
+                            <p class="text-muted">Token used to access protected resources.</p>
+                            <textarea id="access-token" class="token-textarea" readonly>@Model.AccessToken</textarea>
+                            <button class="btn btn-secondary btn-sm copy-btn" data-target="access-token">
+                                <i class="bi bi-clipboard"></i> Copy Access Token
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="content-id" class="token-content">
+                        <div class="token-container">
+                            <h5>ID Token</h5>
+                            <p class="text-muted">Token containing authenticated user information.</p>
+                            <textarea id="id-token" class="token-textarea" readonly>@Model.IdToken</textarea>
+                            <button class="btn btn-secondary btn-sm copy-btn" data-target="id-token">
+                                <i class="bi bi-clipboard"></i> Copy ID Token
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MFA Modal -->
+            <div id="mfa-modal" class="mfa-modal">
+                <div class="mfa-modal-content">
+                    <span class="mfa-close">&times;</span>
+                    <h4>Additional Verification Required</h4>
+                    <div id="mfa-content">
+                        <div class="card border-0">
+                            <div class="card-body">
+                                <p class="card-text">
+                                    To access this feature, we need to verify your identity with an additional level of security.
+                                </p>
+                                
+                                <div id="mfa-action-container"></div>
+                                
+                                <!-- Modificado para usar URL JavaScript dinámica -->
+                                <form method="post" id="mfa-form">
+                                    <input type="hidden" name="__RequestVerificationToken" value="@Html.AntiForgeryToken()" />
+                                    <input type="hidden" name="returnUrl" id="mfa-return-url" value="/Protected" />
+                                    <input type="hidden" name="action" id="mfa-action" value="" />
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-shield-lock"></i> Continue with verification
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary mfa-cancel">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(Model.TokenError))
+        {
+            <div class="alert alert-danger">
+                @Model.TokenError
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                Could not obtain the token.
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @if (!string.IsNullOrEmpty(Model.AccessToken))
+    {
+        <!-- Include SignalR library -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+        
+        <!-- Include marked.js library for markdown rendering -->
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        
+        <!-- Include our chat script -->
+        <script src="~/js/chat.js"></script>
+        
+        <script>
+            // Chat configuration
+            const hubUrl = '@Model.ChatHubUrl';
+            const accessToken = '@Model.AccessToken';
+            
+            // Initialize chat
+            initializeChat(accessToken, hubUrl);
+
+            // Check if this page was loaded as a result of returning from MFA verification
+            document.addEventListener('DOMContentLoaded', function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('returnedFromMFA')) {
+                    console.log('Detected return from MFA verification');
+                    
+                    // Si regresamos de MFA, necesitamos reinicializar la conexión
+                    // con el nuevo token de acceso actualizado después de MFA
+                    if (window.chatManager) {
+                        console.log('Refreshing chat connection with new access token');
+                        
+                        // Primero guardamos el historial existente si hay alguno
+                        if (window.chatManager.messages && window.chatManager.messages.length > 0) {
+                            window.chatManager.saveChatHistory();
+                        }
+                        
+                        // Cerramos la conexión anterior y creamos una nueva con el token actualizado
+                        (async function() {
+                            try {
+                                // Cerrar la conexión existente
+                                if (window.chatManager.connection) {
+                                    await window.chatManager.connection.stop();
+                                    console.log('Previous connection closed');
+                                }
+                                
+                                // Actualizar el token de acceso en el chatManager
+                                window.chatManager.accessToken = '@Model.AccessToken';
+                                
+                                // Reiniciar la conexión con el nuevo token
+                                await window.chatManager.initializeConnection();
+                                console.log('Connection reinitialized with updated token after MFA');
+                                
+                                // Eliminar el parámetro returnedFromMFA de la URL para evitar reinicializaciones redundantes
+                                const url = new URL(window.location);
+                                url.searchParams.delete('returnedFromMFA');
+                                window.history.replaceState({}, '', url);
+                            } catch (err) {
+                                console.error('Error reinitializing connection after MFA:', err);
+                            }
+                        })();
+                    }
+                }
+            });
+        </script>
+
+        <!-- Script for token handling -->
+        <script>
+            // Tokens modal
+            document.addEventListener('DOMContentLoaded', function() {
+                const modal = document.getElementById('tokens-modal');
+                const btn = document.getElementById('show-tokens-btn'); // Corregido: "show-tens-btn" → "show-tokens-btn"
+                const span = document.getElementsByClassName('tokens-close')[0];
+                
+                // Open modal when button is clicked
+                if (btn) { // Añadido verificación para evitar errores si el botón no existe
+                    btn.onclick = function() {
+                        modal.style.display = "block";
+                    }
+                } else {
+                    console.error("Button 'show-tokens-btn' not found");
+                }
+                
+                // Close modal when clicking on X
+                if (span) { // Añadido verificación para evitar errores
+                    span.onclick = function() {
+                        modal.style.display = "none";
+                    }
+                }
+                
+                // Close modal when clicking outside of it
+                window.onclick = function(event) {
+                    if (event.target == modal) {
+                        modal.style.display = "none";
+                    }
+                }
+                
+                // Tab handling
+                document.getElementById('tab-access')?.addEventListener('click', function() {
+                    activateTab('access');
+                });
+                
+                document.getElementById('tab-id')?.addEventListener('click', function() {
+                    activateTab('id');
+                });
+                
+                function activateTab(tabName) {
+                    // Deactivate all tabs and content
+                    document.querySelectorAll('.token-tab').forEach(tab => tab.classList.remove('active'));
+                    document.querySelectorAll('.token-content').forEach(content => content.classList.remove('active'));
+                    
+                    // Activate selected tab
+                    document.getElementById('tab-' + tabName)?.classList.add('active');
+                    document.getElementById('content-' + tabName)?.classList.add('active');
+                }
+                
+                // Clipboard copy functionality
+                document.querySelectorAll('.copy-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const target = this.getAttribute('data-target');
+                        const textarea = document.getElementById(target);
+                        if (textarea) {
+                            textarea.select();
+                            document.execCommand('copy');
+                            
+                            // Visual feedback
+                            const originalText = this.innerHTML;
+                            this.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                            setTimeout(() => {
+                                this.innerHTML = originalText;
+                            }, 2000);
+                        }
+                    });
+                });
+            });
+        </script>
+
+        <!-- MFA handling script -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // MFA Modal handling
+                const mfaModal = document.getElementById('mfa-modal');
+                const mfaClose = document.getElementsByClassName('mfa-close')[0];
+                const mfaForm = document.getElementById('mfa-form');
+                
+                // Establecer la URL correcta del formulario al cargar la página
+                if (mfaForm) {
+                    // Obtener la URL base de la aplicación
+                    const baseUrl = window.location.origin;
+                    mfaForm.action = baseUrl + '/StepUp';
+                    console.log("MFA form action set to:", mfaForm.action);
+                }
+                
+                // Function to show MFA modal with specified action
+                window.showMfaVerification = function(action, returnUrl = '/Protected?returnedFromMFA=true') {
+                    const mfaModal = document.getElementById('mfa-modal');
+                    
+                    // Ya que el usuario será redirigido para la verificación MFA,
+                    // nos aseguramos de que el historial del chat esté guardado en localStorage
+                    if (window.chatManager) {
+                        console.log('Saving chat history before MFA verification');
+                        window.chatManager.saveChatHistory();
+                    }
+                    
+                    // Set the action text if provided
+                    const actionContainer = document.getElementById('mfa-action-container');
+                    if (action) {
+                        actionContainer.innerHTML = `
+                            <p class="alert alert-info">
+                                Requested action: <strong>${action}</strong>
+                            </p>
+                        `;
+                        
+                        // Set the hidden action field for the form submission
+                        document.getElementById('mfa-action').value = action;
+                    } else {
+                        actionContainer.innerHTML = '';
+                    }
+                    
+                    // Set the return URL to include a parameter that indicates we're returning from MFA
+                    const currentPath = window.location.pathname;
+                    document.getElementById('mfa-return-url').value = returnUrl || (currentPath + '?returnedFromMFA=true');
+                    
+                    // Show the modal
+                    mfaModal.style.display = "block";
+                }
+                
+                // Close MFA modal when clicking on X
+                mfaClose.onclick = function() {
+                    mfaModal.style.display = "none";
+                }
+                
+                // Close MFA modal when clicking outside of it
+                window.onclick = function(event) {
+                    if (event.target == mfaModal) {
+                        mfaModal.style.display = "none";
+                    }
+                }
+                
+                // Setup cancel button for MFA
+                document.querySelectorAll('.mfa-cancel').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        mfaModal.style.display = 'none';
+                    });
+                });
+                
+                // Setup form submit handler to validar el envío
+                if (mfaForm) {
+                    mfaForm.addEventListener('submit', function(e) {
+                        // Vamos a mostrar un log de lo que estamos enviando
+                        console.log("Submitting MFA form to:", this.action);
+                        console.log("With action:", document.getElementById('mfa-action').value);
+                        console.log("Return URL:", document.getElementById('mfa-return-url').value);
+                        
+                        // Guardar el historial del chat antes de la redirección
+                        if (window.chatManager) {
+                            console.log('Saving chat history before submitting MFA form');
+                            window.chatManager.saveChatHistory();
+                        }
+                        
+                        // No necesitamos prevenir el comportamiento por defecto
+                        // el formulario se enviará normalmente a la URL configurada
+                    });
+                }
+            });
+        </script>
+    }
+}

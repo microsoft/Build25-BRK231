@@ -1,0 +1,43 @@
+@* Copyright (c) Microsoft Corporation. 
+Licensed under the MIT license. *@
+
+@page
+@model WebAppConRazor.Pages.StepUpModel
+@{
+    ViewData["Title"] = "Additional Verification";
+}
+
+<h1>Additional Verification Required</h1>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Security Verification</h5>
+                <p class="card-text">
+                    To access this feature, we need to verify your identity with an additional level of security.
+                </p>
+                
+                @if (!string.IsNullOrEmpty(Model.Action))
+                {
+                    <div class="alert alert-info">
+                        <p>Requested action: <strong>@Model.Action</strong></p>
+                    </div>
+                }
+                
+                <form method="post">
+                    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                    @if (!string.IsNullOrEmpty(Model.Action))
+                    {
+                        <input type="hidden" name="action" value="@Model.Action" />
+                    }
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-shield-lock"></i> Continue with verification
+                        </button>
+                        <a href="@Model.ReturnUrl" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
