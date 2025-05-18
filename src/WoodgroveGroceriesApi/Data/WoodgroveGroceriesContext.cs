@@ -62,7 +62,11 @@ namespace WoodgroveGroceriesApi.Data
             products.Add(new Product { Id = "p001", Name = "Organic Bananas", Description = "Bunch of organic bananas", Price = 1.99M, DiscountPercentage = 0, IsVegan = true, IsGlutenFree = true, IsAlcoholic = false, Category = "Fruits & Vegetables" });
             products.Add(new Product { Id = "p002", Name = "Organic Apples", Description = "Bag of organic apples", Price = 4.99M, DiscountPercentage = 10, IsVegan = true, IsGlutenFree = true, IsAlcoholic = false, Category = "Fruits & Vegetables" });
             products.Add(new Product { Id = "p003", Name = "Organic Avocados", Description = "Ripe organic avocados", Price = 2.50M, DiscountPercentage = 0, IsVegan = true, IsGlutenFree = true, IsAlcoholic = false, Category = "Fruits & Vegetables" });
-            
+
+            //Comment to the user:
+            //Complete list of categories and products were removed 
+            //Please add more items for the demo to work correctly
+
             // Seed the products
             modelBuilder.Entity<Product>().HasData(products);
 

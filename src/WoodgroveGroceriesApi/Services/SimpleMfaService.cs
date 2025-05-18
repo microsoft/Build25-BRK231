@@ -44,6 +44,7 @@ namespace WoodgroveGroceriesApi.Services
         /// <returns>True if MFA is completed, false otherwise.</returns>
         public bool IsMfaCompleted(HttpContext httpContext)
         {
+            // 🔍 DEMO POINT: CHECK MFA IN RESOURCE API
             // Check if the access token includes the MFA claim (acrs with value "c1")
             var acrsClaim = httpContext.User?.FindFirst("acrs");
             return acrsClaim != null && 

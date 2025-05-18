@@ -247,7 +247,7 @@ namespace WoodgroveGroceriesApi.Controllers
         [HttpPatch("{productId}")]
         [RequiredScopeOrAppPermission(
             AcceptedScope = new[] { "Products.Write" })]
-        [RequireAppRole] // Requires the ProductManager role from appsettings.json
+        [RequireAppRole] // Requires the ProductManager role 
         public async Task<IActionResult> UpdateProduct(string productId, ProductUpdate productUpdate)
         {
             if (!ModelState.IsValid)
@@ -313,7 +313,7 @@ namespace WoodgroveGroceriesApi.Controllers
         [HttpDelete("{productId}")]
         [RequiredScopeOrAppPermission(
             AcceptedScope = new[] { "Products.Write" })]
-        [RequireAppRole] // Requires the ProductManager role from appsettings.json
+        [RequireAppRole] // Requires the ProductManager role 
         public async Task<IActionResult> DeleteProduct(string productId)
         {
             var product = await _context.Products.FindAsync(productId);

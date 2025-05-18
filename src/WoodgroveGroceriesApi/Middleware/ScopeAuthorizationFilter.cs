@@ -52,19 +52,21 @@ namespace WoodgroveGroceriesApi.Middleware
             // Store in HttpContext to be used by AuditMiddleware for logging
             context.HttpContext.Items["RequiredScopes"] = requiredScopes;
 
+            //TODO: REVIEW THIS
             // In development, bypass scope validation
             if (_env.IsDevelopment())
             {
                 // Record metrics for development access
-                _telemetryClient.TrackEvent("DevelopmentScopeBypass", 
+                _telemetryClient.TrackEvent("DevelopmentScopeBypass",
                     properties: new Dictionary<string, string> {
                         { "requiredScopes", string.Join(",", requiredScopes) },
                         { "path", context.HttpContext.Request.Path }
                     });
-                
+
                 return;
             }
 
+            //TODO: REVIEW THIS
             // For production, validate scopes
             // Note: This filter doesn't enforce access control directly,
             // it just captures scope requirements for auditing
@@ -72,6 +74,7 @@ namespace WoodgroveGroceriesApi.Middleware
         }
     }
 
+    //TODO: REVIEW IF THIS IS NEEDED
     /// <summary>
     /// Attribute that allows anonymous access to API endpoints in development environment.
     /// In production, this enforces authentication requirements.
