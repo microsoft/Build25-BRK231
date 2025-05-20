@@ -1,0 +1,963 @@
+openapi: 3.0.3
+info:
+  title: Woodgrove Groceries API
+  description: API for managing products, carts, and checkout/payment operations in the Woodgrove Groceries demo.
+  version: 1.0.0
+
+servers:
+  - url: https://api.woodgrovegroceries.com/v1
+    description: Main API server
+
+tags:
+  - name: Products
+    description: Operations related to products
+  - name: Carts
+    description: Operations related to shopping carts
+  - name: Checkout
+    description: Operations for checkout and payment
+
+security:
+  - oauth2: []
+
+paths:
+  /products:  
+    get:
+      tags:
+        - Products
+      summary: List all products
+      operationId: listProducts
+      description: Returns a list of all products available in the store.
+      parameters:
+        - $ref: '#/components/parameters/ODataSelect'
+        - $ref: '#/components/parameters/ODataFilter'
+        - $ref: '#/components/parameters/ODataOrderBy'
+        - $ref: '#/components/parameters/ODataTop'
+        - $ref: '#/components/parameters/ODataSkip'
+        - $ref: '#/components/parameters/ODataCount'
+        - $ref: '#/components/parameters/ODataExpand'
+      security:
+        - oauth2: ['Products.Read']
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      operationId: createProduct
+      description: Creates a new product in the store. Requires ProductManager role.
+      security:
+        - oauth2: ['Products.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Product successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Missing required role
+
+  /products/{productId}:
+    get:
+      tags:
+        - Products
+      summary: Get a product by ID
+      operationId: getProduct
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: ID of the product to retrieve
+          schema:
+            type: string
+        - $ref: '#/components/parameters/ODataExpand'
+        - $ref: '#/components/parameters/ODataSelect'
+      security:
+        - oauth2: ['Products.Read']
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+    put:
+      tags:
+        - Products
+      summary: Replace an existing product
+      operationId: replaceProduct
+      description: Completely replaces an existing product's data. Requires ProductManager role.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: ID of the product to replace
+          schema:
+            type: string
+      security:
+        - oauth2: ['Products.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Product successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Missing required role
+        '404':
+          description: Product not found
+    patch:
+      tags:
+        - Products
+      summary: Partially update a product
+      operationId: updateProduct
+      description: Updates specific attributes of a product. Requires ProductManager role.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: ID of the product to update
+          schema:
+            type: string
+      security:
+        - oauth2: ['Products.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Product successfully updated (partially)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Missing required role
+        '404':
+          description: Product not found
+    delete:
+      tags:
+        - Products
+      summary: Delete a product by ID
+      operationId: deleteProduct
+      description: Deletes an existing product. Requires ProductManager role.
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          description: ID of the product to delete
+          schema:
+            type: string
+      security:
+        - oauth2: ['Products.Write']
+      responses:
+        '204':
+          description: Product successfully deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Missing required role
+        '404':
+          description: Product not found
+
+  /products/search:
+    get:
+      tags:
+        - Products
+      summary: Search products
+      operationId: searchProducts
+      description: Search products by query string
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Search term
+          schema:
+            type: string
+      security:
+        - oauth2: ['Products.Read']
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /carts:
+    get:
+      tags:
+        - Carts
+      summary: List all carts
+      operationId: listCarts
+      description: Returns a list of all carts (usually for administrative purposes).
+      parameters:
+        - $ref: '#/components/parameters/ODataSelect'
+        - $ref: '#/components/parameters/ODataFilter'
+        - $ref: '#/components/parameters/ODataOrderBy'
+        - $ref: '#/components/parameters/ODataTop'
+        - $ref: '#/components/parameters/ODataSkip'
+        - $ref: '#/components/parameters/ODataCount'
+        - $ref: '#/components/parameters/ODataExpand'
+      security:
+        - oauth2: ['Carts.Read']
+      responses:
+        '200':
+          description: List of carts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cart'
+    post:
+      tags:
+        - Carts
+      summary: Create a new cart
+      operationId: createCart
+      description: Creates a new shopping cart.
+      security:
+        - oauth2: ['Carts.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartCreate'
+      responses:
+        '201':
+          description: Cart successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /carts/{cartId}:
+    get:
+      tags:
+        - Carts
+      summary: Get a cart by ID
+      operationId: getCart
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to retrieve
+          schema:
+            type: string
+        - $ref: '#/components/parameters/ODataExpand'
+        - $ref: '#/components/parameters/ODataSelect'
+      security:
+        - oauth2: ['Carts.Read']
+      responses:
+        '200':
+          description: Cart details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart not found
+    put:
+      tags:
+        - Carts
+      summary: Replace an existing cart
+      operationId: replaceCart
+      description: Completely replaces the data of an existing cart.
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to replace
+          schema:
+            type: string
+      security:
+        - oauth2: ['Carts.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartUpdate'
+      responses:
+        '200':
+          description: Cart successfully replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart not found
+    patch:
+      tags:
+        - Carts
+      summary: Partially update a cart
+      operationId: updateCart
+      description: Updates specific attributes of a cart.
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to update
+          schema:
+            type: string
+      security:
+        - oauth2: ['Carts.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartUpdate'
+      responses:
+        '200':
+          description: Cart successfully updated (partially)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart not found
+    delete:
+      tags:
+        - Carts
+      summary: Delete a cart by ID
+      operationId: deleteCart
+      description: Deletes an existing cart.
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart to delete
+          schema:
+            type: string
+      security:
+        - oauth2: ['Carts.Write']
+      responses:
+        '204':
+          description: Cart successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart not found
+
+  /carts/{cartId}/items:
+    get:
+      tags:
+        - Carts
+      summary: List all items in a cart
+      operationId: listCartItems
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart
+          schema:
+            type: string
+        - $ref: '#/components/parameters/ODataExpand'
+        - $ref: '#/components/parameters/ODataSelect'
+      security:
+        - oauth2: ['Carts.Read']
+      responses:
+        '200':
+          description: List of items in the cart
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartItem'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart not found
+    post:
+      tags:
+        - Carts
+      summary: Add an item to the cart
+      operationId: addItemToCart
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          description: ID of the cart
+          schema:
+            type: string
+      security:
+        - oauth2: ['Carts.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+      responses:
+        '201':
+          description: Item successfully added to the cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart or product not found
+
+  /carts/{cartId}/items/{itemId}:
+    get:
+      tags:
+        - Carts
+      summary: Get a specific item from a cart
+      operationId: getCartItem
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the cart
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the item in the cart
+        - $ref: '#/components/parameters/ODataExpand'
+        - $ref: '#/components/parameters/ODataSelect'
+      security:
+        - oauth2: ['Carts.Read']
+      responses:
+        '200':
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart or item not found
+    put:
+      tags:
+        - Carts
+      summary: Replace an item in the cart
+      operationId: replaceCartItem
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the cart
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the item in the cart
+      security:
+        - oauth2: ['Carts.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdate'
+      responses:
+        '200':
+          description: Item successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart or item not found
+    patch:
+      tags:
+        - Carts
+      summary: Partially update an item in the cart
+      operationId: updateCartItem
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the cart
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the item in the cart
+      security:
+        - oauth2: ['Carts.Write']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemUpdate'
+      responses:
+        '200':
+          description: Item successfully updated (partially)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart or item not found
+    delete:
+      tags:
+        - Carts
+      summary: Delete an item from the cart
+      operationId: deleteCartItem
+      parameters:
+        - name: cartId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the cart
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the item to delete
+      security:
+        - oauth2: ['Carts.Write']
+      responses:
+        '204':
+          description: Item successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart or item not found
+
+  /checkout:
+    post:
+      tags:
+        - Checkout
+      summary: Perform checkout for a cart
+      operationId: checkoutCart
+      description: Initiates the checkout process for a given cart, calculating the total and preparing the order.
+      security:
+        - oauth2: ['Checkout.Process']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '200':
+          description: Checkout details, including total and order status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '400':
+          description: Bad request (e.g., empty cart)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Cart not found
+
+  /checkout/{orderId}/pay:
+    post:
+      tags:
+        - Checkout
+      summary: Pay for an order
+      operationId: payOrder
+      description: Processes the payment of the order generated during checkout.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: ID of the order to pay
+          schema:
+            type: string
+      security:
+        - oauth2: ['Checkout.Process']
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Payment successfully processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Bad request (invalid payment data)
+        '401':
+          description: Unauthorized
+        '402':
+          description: Payment error (insufficient funds, etc.)
+        '404':
+          description: Order not found
+
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: OAuth 2.0 authentication using Microsoft Entra ID
+      flows:
+        implicit:
+          authorizationUrl: https://lagomarciamdemo2.ciamlogin.com/c92a6719-2559-47df-baa3-c9f02517c42c/oauth2/v2.0/authorize
+          scopes:
+            'Products.Read': Read access to product information
+            'Products.Write': Write access to product information
+            'Carts.Read': Read access to cart information
+            'Carts.Write': Write access to cart information
+            'Checkout.Process': Access to checkout and payment processing
+  
+  parameters:
+    ODataSelect:
+      name: $select
+      in: query
+      description: OData $select query option - select specific properties to be returned
+      schema:
+        type: string
+    ODataFilter:
+      name: $filter
+      in: query
+      description: OData $filter query option - filter the results
+      schema:
+        type: string
+    ODataOrderBy:
+      name: $orderby
+      in: query
+      description: OData $orderby query option - order the results
+      schema:
+        type: string
+    ODataTop:
+      name: $top
+      in: query
+      description: OData $top query option - return only the top n results
+      schema:
+        type: integer
+    ODataSkip:
+      name: $skip
+      in: query
+      description: OData $skip query option - skip the first n results
+      schema:
+        type: integer
+    ODataCount:
+      name: $count
+      in: query
+      description: OData $count query option - include count of entities in response
+      schema:
+        type: boolean
+    ODataExpand:
+      name: $expand
+      in: query
+      description: OData $expand query option - expand related entities
+      schema:
+        type: string
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique ID of the product
+        name:
+          type: string
+          description: Name of the product
+        description:
+          type: string
+          description: Product description
+        price:
+          type: number
+          format: float
+          description: Product price
+        discountPercentage:
+          type: number
+          format: float
+          description: Discount percentage (0-100)
+        isVegan:
+          type: boolean
+          description: Indicates if the product is vegan-friendly
+        isGlutenFree:
+          type: boolean
+          description: Indicates if the product is gluten-free
+        isAlcoholic:
+          type: boolean
+          description: Indicates if the product contains alcohol
+        category:
+          type: string
+          description: Category of the product
+      required:
+        - id
+        - name
+        - price
+
+    ProductCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the product
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        discountPercentage:
+          type: number
+          format: float
+        isVegan:
+          type: boolean
+        isGlutenFree:
+          type: boolean
+        isAlcoholic:
+          type: boolean
+        category:
+          type: string
+      required:
+        - name
+        - price
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        discountPercentage:
+          type: number
+          format: float
+        isVegan:
+          type: boolean
+        isGlutenFree:
+          type: boolean
+        isAlcoholic:
+          type: boolean
+        category:
+          type: string
+
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique ID of the cart
+        userId:
+          type: string
+          description: ID of the user who owns this cart
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalPrice:
+          type: number
+          format: float
+          description: Total sum of products in the cart (with discounts applied)
+      required:
+        - id
+        - items
+        - totalPrice
+
+    CartCreate:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: ID of the user creating the cart
+
+    CartUpdate:
+      type: object
+      properties:
+        userId:
+          type: string
+
+    CartItem:
+      type: object
+      properties:
+        itemId:
+          type: string
+          description: Unique ID of the item in the cart
+        cartId:
+          type: string
+          description: ID of the cart this item belongs to
+        productId:
+          type: string
+          description: ID of the product
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: integer
+          description: Quantity of the product
+        price:
+          type: number
+          format: float
+          description: Total price for this item (product x quantity, with discount if applicable)
+      required:
+        - itemId
+        - productId
+        - quantity
+        - price
+
+    CartItemCreate:
+      type: object
+      properties:
+        productId:
+          type: string
+          description: ID of the product to add
+        quantity:
+          type: integer
+          description: Quantity of the product
+      required:
+        - productId
+        - quantity
+
+    CartItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          description: New quantity of the product
+
+    CheckoutRequest:
+      type: object
+      properties:
+        cartId:
+          type: string
+          description: ID of the cart to be processed
+        address:
+          type: string
+          description: Shipping address
+      required:
+        - cartId
+
+    CheckoutResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: ID of the generated order
+        cartId:
+          type: string
+          description: ID of the associated cart
+        totalAmount:
+          type: number
+          format: float
+          description: Total amount to be paid
+        currency:
+          type: string
+          description: Currency used
+        status:
+          type: string
+          description: Order status (e.g., "PENDING_PAYMENT")
+      required:
+        - orderId
+        - cartId
+        - totalAmount
+        - currency
+        - status
+
+    PaymentRequest:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+          description: Payment method (credit card, PayPal, etc.)
+        cardNumber:
+          type: string
+          description: Card number (if applicable)
+        expirationDate:
+          type: string
+          description: Card expiration date (mm/yy) (if applicable)
+        cvv:
+          type: string
+          description: Card security code (if applicable)
+      required:
+        - paymentMethod
+
+    PaymentResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: ID of the paid order
+        paymentStatus:
+          type: string
+          description: Result of the payment (e.g., "PAID", "FAILED")
+        transactionId:
+          type: string
+          description: Transaction ID from the payment processor (if applicable)
+      required:
+        - orderId
+        - paymentStatus

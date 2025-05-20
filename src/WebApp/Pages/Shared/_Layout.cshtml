@@ -1,0 +1,112 @@
+﻿@* Copyright (c) Microsoft Corporation. 
+Licensed under the MIT license. *@
+
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Woodgrove Groceries</title>
+    <link rel="icon" type="image/x-icon" href="~/woodgrove-favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/WebAppConRazor.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/bs-stepper.min.css">
+
+    <!--- Font ---->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header" id="header">
+        <div id="headerContainer" class="container" style="padding-top: 20px; padding-bottom: 20px;">
+            <nav class="navbar navbar-expand-lg">
+                <div class="container-fluid">
+                    <a asp-page="/Index">
+                        <img src="/images/logo.png" height="22" alt="Woodgrove logo" style="padding-left: 10px;" onerror="this.src='/Company-branding/headerlogo.png'" />
+                    </a> 
+                    <a class="navbar-brand" asp-area="" asp-page="/Index" style="padding-left: 15px;">Woodgrove Groceries</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarContent">
+                        <div class="navbar-nav me-auto mb-2">
+                        </div>
+                        <ul class="navbar-nav">
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/Protected">Agent</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignOut">Logout</a>
+                                </li>
+                                <li class="nav-item">
+                                    <span class="nav-link text-dark">Hi @(User.FindFirst("name")?.Value ?? User.Identity.Name)!</span>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="MicrosoftIdentity" asp-controller="Account" asp-action="SignIn">Login</a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        @RenderSection("Jumbotron", required: false)
+        @RenderSection("Waves", required: false)
+    </header>
+
+    @RenderSection("FullScreen", required: false)
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Feedback button --->
+    <div id="feedbackButton">
+        <a class="btn btn-success feedback" data-bs-offset="10,-100" data-toggle="popover" data-bs-placement="top"
+            title="Provide feedback" href="https://github.com/microsoft/woodgrove-groceries/issues/new"><i
+                class="bi bi-megaphone"></i>&nbsp; Feedback</a>
+    </div>
+
+    <div style="height: 80px;"></div>
+
+    <!-- Footer -->
+    <footer class="border-top footer text-muted" style="border-top-style: none!important; height: 100px;">
+        <svg viewBox="0 -20 700 110" width="100%" height="110" preserveAspectRatio="none">
+            <path transform="translate(0, -20)" d="M0,10 c80,-22 240,0 350,18 c90,17 260,7.5 350,-20 v50 h-700"
+                fill="rgb(5, 166, 2)" />
+            <path d="M0,10 c80,-18 230,-12 350,7 c80,13 260,17 350,-5 v100 h-700z" fill="rgb(222, 238, 222)" />
+        </svg>
+        <div class="container-fluid footer-text"
+            style="width: 100%; top: -60px; position: relative; background-color: rgb(222, 238, 222);">
+            &copy; 2025 - Woodgrove Groceries &nbsp; - &nbsp;&nbsp;
+            <i class="bi bi-info-circle"></i> <a asp-area="" asp-page="/Privacy" style="padding-right: 10px;">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bs-stepper/dist/js/bs-stepper.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
