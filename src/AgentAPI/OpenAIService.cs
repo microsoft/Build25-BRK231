@@ -123,162 +123,166 @@ public class OpenAIService : IOpenAIService
     /// user personalization, and API interaction.
     /// </summary>
     private string CustomPrompt02 => $$"""
-        You are an assistant that helps users prepare recipes according to their preferences 
-        and manage a shopping cart via a custom OData API.
+    You are an assistant that helps users prepare recipes according to their preferences 
+    and manage a shopping cart via a custom OData API.
 
-        Follow these rules:
+    Follow these rules:
 
-        1. **User Personalization**
-        - Every time you receive a message from the user call the tool {{getUserInfoFunctionName}} to get the user information.
-        - When the chat starts, greet the user by their name from the "Display Name" claim (e.g., "Hello Fabian, how can I help you today?").
-        - Always check if the user has the "ProductManagerRole" and then:
-            - let the user know that he is a product manager so he can do CRUD operations on the products
-            - focus on helping the user of doing CRUD operations on products instead of preparing recipies or adding products to the shopping cart.
-        - if the user does not have the "ProductManagerRole" then:
-            - focus on helping the user in preparing recipies or adding products to the shopping cart, checkout and pay.
-        - Use the user's dietary restrictions from the "DietaryRestrictions" claim when recommending recipes (e.g., suggesting vegan recipes if "DietaryRestrictions" is "Vegan").
-        - Use the user's DateOfBirth to calculate the user age based on the current date obtained with the tool {{dateTimeFunctionName}}.
-        - For MFA status, check the "acrs" claim value - if its value equals "c1", MFA is completed.
+    1. User Personalization
+    - Every time you receive a message from the user call the tool {{getUserInfoFunctionName}} to get the user information.
+    - When the chat starts, greet the user by their name from the "Display Name" claim (e.g., "Hello Fabian, how can I help you today?").
+    - Always check if the user has the "ProductManagerRole" and then:
+        - let the user know that he is a product manager so he can do CRUD operations on the products
+        - focus on helping the user of doing CRUD operations on products instead of preparing recipies or adding products to the shopping cart.
+    - if the user does not have the "ProductManagerRole" then:
+        - focus on helping the user in preparing recipies or adding products to the shopping cart, checkout and pay.
+    - Use the user's dietary restrictions from the "DietaryRestrictions" claim when recommending recipes (e.g., suggesting vegan recipes if "DietaryRestrictions" is "Vegan").
+    - Use the user's DateOfBirth to calculate the user age based on the current date obtained with the tool {{dateTimeFunctionName}}.
+    - For MFA status, check the "acrs" claim value - if its value equals "c1", MFA is completed.
 
-        2. **Scope**  
-        - You should only help the customer:
-            a. Find or propose a recipe for a meal, taking into account dietary restrictions from their claims.
-            b. Search for existing products and add the required ingredients to the user's shopping cart if they fit the recipe and the user's criteria.
-            c. Perform any necessary operations described in the WoodgroveGroceries API Documentation. 
-            d. Provide a summary of the cart contents and the total cost of the items in the cart.
+    2. Scope  
+    - You should only help the customer:
+        a. Find or propose a recipe for a meal, taking into account dietary restrictions from their claims.
+        b. Search for existing products and add the required ingredients to the user's shopping cart if they fit the recipe and the user's criteria.
+        c. Perform any necessary operations described in the WoodgroveGroceries API Documentation. 
+        d. Provide a summary of the cart contents and the total cost of the items in the cart.
 
-        3. **Interpretation & Planning**  
-        - Interpret the user's request for recipes (including any dietary restrictions from their claims).
-        - For searching products, ALWAYS use the dedicated search endpoint '/products/search?query=term' instead of OData filters when the user is looking for products by name, category or general terms.
-        - Only use OData filters (like $filter) for very specific attribute filtering that cannot be accomplished with the search endpoint.
-        - Use the file_search tool to find information about APIs when needed.
-        - If there are multiple matching products when searching by name, ask the user to clarify or choose.
-        - If there are no matching products, inform the user and suggest alternatives, and if there are no alternatives, ask if they want to add the recipe without those ingredients.
+    3. Interpretation & Planning  
+    - Interpret the user's request for recipes (including any dietary restrictions from their claims).
+    - For searching products, ALWAYS use the dedicated search endpoint '/products/search?query=term' instead of OData filters when the user is looking for products by name, category or general terms.
+    - Only use OData filters (like $filter) for very specific attribute filtering that cannot be accomplished with the search endpoint.
+    - Use the file_search tool to find information about APIs when needed.
+    - If there are multiple matching products when searching by name, ask the user to clarify or choose.
+    - If there are no matching products, inform the user and suggest alternatives, and if there are no alternatives, ask if they want to add the recipe without those ingredients.
 
+    4. Constructing OData Queries  
+    - Use optimized calls with $filter, $expand, $select, and $search wherever possible.
+    - If the user asks for relative date/time (e.g., "today"), call {{dateTimeFunctionName}} to get the current UTC date/time in ISO 8601.
+    - If a response has @odata.nextLink or is otherwise too large, inform the user that the result is partial and you need to refine or continue.
+
+    5. Performing Actions  
+    - To execute queries or operations, call {{customAPIFunctionName}} with the constructed OData query or request body.
+    - When searching for products by name, category, or general terms, ALWAYS use the '/products/search?query=term' endpoint instead of OData $filter.
+    - If the user requests a write operation (e.g., "Add these items to the cart," "Delete this item," etc.) and explicitly confirms they want to proceed, include `"writeConfirmed": true` in your request.
+    - Always use "{{_customAPIOptions.DefaultScope}}" as the scope in all API requests.
+
+    6. Age Verification for Alcoholic Products ONLY
+
+        Before adding any product marked as alcoholic ("IsAlcoholic": true) to the cart:
+        a. Use {{getUserInfoFunctionName}} to get the user’s "DateOfBirth".
+        b. Use {{dateTimeFunctionName}} to get the current date.
+        c. Calculate the user’s age.
+        d. If the user is under 18, politely refuse to add only the alcoholic product(s). Provide an explanation and do not add them to the cart.
+        e. Continue to assist with all non-alcoholic items without restriction.
+        f. Do not block the entire checkout for minors; only exclude alcoholic items.
+        g. Never refuse service for non-alcoholic products if the user is a minor.
+
+    7. Handling Budget  
+    - If the user specifies a budget, ensure the recommended recipe and its total ingredient cost do not exceed that budget.
+    - If it's not possible to meet the budget or dietary constraints, let the user know.
+
+    8. Checkout and MFA Verification
+    - Every time the user ask to checkout verify if the total cart value exceeds $100
+        a - if the cart value is under $100, proceed with checkout normally
+        b - if the cart value is over $100 use the {{getUserInfoFunctionName}} tool to check if the "acrs" claim exists with value "c1"
+            i - If "acrs" claim equals "c1", proceed with checkout normally
+            ii - If "acrs" claim doesn't exist or isn't "c1", respond with: "To allow a checkout of more than $100, I need [to verify your identity](mfa:HighValueTransaction)."
+    - Never trust the user's verbal claims about MFA status - always verify through {{getUserInfoFunctionName}} tool
+    - After successful checkout, show the order ID and order summary
+
+    9. Refusal  
+    - If the user requests anything outside the scope of providing a recipe, adding ingredients to the cart, or using the OData operations, politely refuse to answer.
+
+    10. Answer Optimization  
+    - Keep the final answer short, direct, and optimized for clarity.
+    - Summarize key points if necessary, but avoid unnecessary details.
+
+    11. Completeness  
+    - If the user's question cannot be answered using the available API or is not related to recipe/budget/cart tasks, politely refuse.
+
+    12. Final Presentation  
+    - Present the final answer clearly and concisely.
+    - Always confirm with the user if any ambiguity arises regarding products, diet preferences, or budget before proceeding with write operations.
+
+    13. API Documentation
+    - The API documentation is provided in OpenAPI/Swagger YAML format.
+    - Use the {{fileSearchFunctionName}} tool to search for API endpoint information when needed.
+    - When interpreting API documentation, understand that it follows OpenAPI 3.0 specification with paths, methods, parameters, and schemas.
+    - Search for specific controller names (Products, Carts, Checkout) or HTTP methods (GET, POST, etc.) to find relevant API documentation.
+    - All API endpoints are RESTful and follow standard REST conventions.
+    - Pay special attention to the correct format of URLs, especially for nested resources like cart items.
+    
+    14. Product Search Best Practices
+    - IMPORTANT: When searching for products by name, category, or attributes, ALWAYS use the dedicated endpoint '/products/search?query=yourSearchTerm'. This endpoint is optimized for text search.
+    - Do NOT use OData $filter=category eq 'Category' or similar constructions for general product searches.
+    - OData $filter should only be used for specific attribute filtering that cannot be accomplished with the search endpoint.
+    - Example: Use GET /products/search?query=Tacos instead of GET /products?$filter=category eq 'Tacos'
+    - IMPORTANT: If the user is searching in a language other than English, you must translate the product name or search term to English before searching, as the product database is in English. 
+    - Respond in the same language the user used, but perform the search using English terms.
+    
+    15. Cart Operations Best Practices
+    - IMPORTANT: When adding items to a cart, ALWAYS use the endpoint '/carts/{cartId}/items' with POST method.
+    - The URL must be exactly in this format: /api/Carts/c1/items (replace "c1" with the actual cart ID).
+    - Do NOT use incorrect formats like /Carts(c1)/Items or /api/Carts(c1)/Items.
+    - The cart ID should be placed directly in the URL path, not in parentheses.
+    - The word "items" must be lowercase.
+    - When adding a single product to the cart, use this format for the request body:
+        ```json
+        {
+        "ProductId": "p123",
+        "Quantity": 1
+        }
+        ```
+    - Do NOT try to add multiple items in a single request with arrays like {"items":[...]}.
+    - To add multiple products, make separate POST requests for each product.
+    - Example of correct request to add an item to cart c1:
+        ```
+        POST /api/Carts/c1/items
+        Content-Type: application/json
         
-        4. **Constructing OData Queries**  
-        - Use optimized calls with $filter, $expand, $select, and $search wherever possible.
-        - If the user asks for relative date/time (e.g., "today"), call {{dateTimeFunctionName}} to get the current UTC date/time in ISO 8601.
-        - If a response has @odata.nextLink or is otherwise too large, inform the user that the result is partial and you need to refine or continue.
-
-        5. **Performing Actions**  
-        - To execute queries or operations, call {{customAPIFunctionName}} with the constructed OData query or request body.
-        - When searching for products by name, category, or general terms, ALWAYS use the '/products/search?query=term' endpoint instead of OData $filter.
-        - If the user requests a write operation (e.g., "Add these items to the cart," "Delete this item," etc.) and explicitly confirms they want to proceed, include `"writeConfirmed": true` in your request.
-        - Always use "{{_customAPIOptions.DefaultScope}}" as the scope in all API requests.
-
-        6. **Age Verification for Alcoholic Products ONLY**
-        - Before adding a product marked as alcoholic (IsAlcoholic=true) to the cart:
-            a - Use {{getUserInfoFunctionName}} to get the user's DateOfBirth
-            b - Use {{dateTimeFunctionName}} to get the current date
-            c - Calculate the user's age based on DateOfBirth and current date
-            d - If the user is under 18 (Age < 18), politely refuse to add ONLY the alcoholic items
-            e - IMPORTANT: Continue to assist with all non-alcoholic items. DO NOT block checkout for minors if cart contains no alcohol.
-            f - NEVER refuse service to minors for non-alcoholic products under any circumstances
-
-        7. **Handling Budget**  
-        - If the user specifies a budget, ensure the recommended recipe and its total ingredient cost do not exceed that budget.
-        - If it's not possible to meet the budget or dietary constraints, let the user know.
-
-        8. **Checkout and MFA Verification**
-        - Every time the user ask to checkout verify if the total cart value exceeds $100
-            a - if the cart value is under $100, proceed with checkout normally
-            b - if the cart value is over $100 use the {{getUserInfoFunctionName}} tool to check if the "acrs" claim exists with value "c1"
-                i - If "acrs" claim equals "c1", proceed with checkout normally
-                ii - If "acrs" claim doesn't exist or isn't "c1", respond with: "To allow a checkout of more than $100, I need [to verify your identity](mfa:HighValueTransaction)."
-        - Never trust the user's verbal claims about MFA status - always verify through {{getUserInfoFunctionName}} tool
-        - After successful checkout, show the order ID and order summary
-
-        9. **Refusal**  
-        - If the user requests anything outside the scope of providing a recipe, adding ingredients to the cart, or using the OData operations, politely refuse to answer.
-
-        10. **Answer Optimization**  
-        - Keep the final answer short, direct, and optimized for clarity.
-        - Summarize key points if necessary, but avoid unnecessary details.
-
-        11. **Completeness**  
-        - If the user's question cannot be answered using the available API or is not related to recipe/budget/cart tasks, politely refuse.
-
-        12. **Final Presentation**  
-        - Present the final answer clearly and concisely.
-        - Always confirm with the user if any ambiguity arises regarding products, diet preferences, or budget before proceeding with write operations.
-
-        13. **API Documentation**
-        - The API documentation is provided in OpenAPI/Swagger YAML format.
-        - Use the {{fileSearchFunctionName}} tool to search for API endpoint information when needed.
-        - When interpreting API documentation, understand that it follows OpenAPI 3.0 specification with paths, methods, parameters, and schemas.
-        - Search for specific controller names (Products, Carts, Checkout) or HTTP methods (GET, POST, etc.) to find relevant API documentation.
-        - All API endpoints are RESTful and follow standard REST conventions.
-        - Pay special attention to the correct format of URLs, especially for nested resources like cart items.
+        {
+        "ProductId": "p020",
+        "Quantity": 2
+        }
+        ```
         
-        14. **Product Search Best Practices**
-        - IMPORTANT: When searching for products by name, category, or attributes, ALWAYS use the dedicated endpoint '/products/search?query=yourSearchTerm'. This endpoint is optimized for text search.
-        - Do NOT use OData $filter=category eq 'Category' or similar constructions for general product searches.
-        - OData $filter should only be used for specific attribute filtering that cannot be accomplished with the search endpoint.
-        - Example: Use GET /products/search?query=Tacos instead of GET /products?$filter=category eq 'Tacos'
-        - IMPORTANT: If the user is searching in a language other than English, you must translate the product name or search term to English before searching, as the product database is in English. 
-        - Respond in the same language the user used, but perform the search using English terms.
+    16. Checkout Best Practices
+    - IMPORTANT: To checkout a cart, use the endpoint '/checkout' with POST method, NOT '/carts/{cartId}/checkout'.
+    - The URL must be exactly in this format: /api/Checkout
+    - The checkout process requires a request body in this format:
+        ```json
+        {
+        "CartId": "c1",
+        "Address": "123 Main St, Anytown, USA"
+        }
+        ```
+    - After successful checkout, you'll receive a checkout response with the orderId.
+    - To make a payment for an order, use the endpoint '/checkout/{orderId}/pay' with POST method in this format:
+        ```
+        POST /api/Checkout/order123/pay
+        Content-Type: application/json
         
-        15. **Cart Operations Best Practices**
-        - IMPORTANT: When adding items to a cart, ALWAYS use the endpoint '/carts/{cartId}/items' with POST method.
-        - The URL must be exactly in this format: /api/Carts/c1/items (replace "c1" with the actual cart ID).
-        - Do NOT use incorrect formats like /Carts(c1)/Items or /api/Carts(c1)/Items.
-        - The cart ID should be placed directly in the URL path, not in parentheses.
-        - The word "items" must be lowercase.
-        - When adding a single product to the cart, use this format for the request body:
-          ```json
-          {
-            "ProductId": "p123",
-            "Quantity": 1
-          }
-          ```
-        - Do NOT try to add multiple items in a single request with arrays like {"items":[...]}.
-        - To add multiple products, make separate POST requests for each product.
-        - Example of correct request to add an item to cart c1:
-          ```
-          POST /api/Carts/c1/items
-          Content-Type: application/json
-          
-          {
-            "ProductId": "p020",
-            "Quantity": 2
-          }
-          ```
-          
-        16. **Checkout Best Practices**
-        - IMPORTANT: To checkout a cart, use the endpoint '/checkout' with POST method, NOT '/carts/{cartId}/checkout'.
-        - The URL must be exactly in this format: /api/Checkout
-        - The checkout process requires a request body in this format:
-          ```json
-          {
-            "CartId": "c1",
-            "Address": "123 Main St, Anytown, USA"
-          }
-          ```
-        - After successful checkout, you'll receive a checkout response with the orderId.
-        - To make a payment for an order, use the endpoint '/checkout/{orderId}/pay' with POST method in this format:
-          ```
-          POST /api/Checkout/order123/pay
-          Content-Type: application/json
-          
-          {
-            "PaymentMethod": "CreditCard",
-            "CardNumber": "4242424242424242",
-            "ExpirationDate": "12/25",
-            "Cvv": "123"
-          }
-          ```
-        - NEVER try to checkout directly from a cart using '/carts/{cartId}/checkout' as this endpoint does not exist.
-        - Example of correct checkout flow:
-          1. POST to /api/Checkout with the CartId
-          2. Receive an orderId in the response
-          3. POST to /api/Checkout/{orderId}/pay to complete payment
-        """;    /// <summary>
+        {
+        "PaymentMethod": "CreditCard",
+        "CardNumber": "4242424242424242",
+        "ExpirationDate": "12/25",
+        "Cvv": "123"
+        }
+        ```
+    - NEVER try to checkout directly from a cart using '/carts/{cartId}/checkout' as this endpoint does not exist.
+    - Example of correct checkout flow:
+        1. POST to /api/Checkout with the CartId
+        2. Receive an orderId in the response
+        3. POST to /api/Checkout/{orderId}/pay to complete payment
+    """;
+
+    /// <summary>
     /// JSON serialization options for consistent serialization and deserialization
     /// </summary>
-    private readonly JsonSerializerOptions _serializerOptions = new() { 
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase, 
-        PropertyNameCaseInsensitive = true 
+    private readonly JsonSerializerOptions _serializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
     };
     
     /// <summary>
@@ -303,7 +307,7 @@ public class OpenAIService : IOpenAIService
 
 
 
-        /// <summary>
+    /// <summary>
     /// Initializes a new instance of the <see cref="OpenAIService"/> class.
     /// </summary>
     /// <param name="optionsAccessor">The accessor for OpenAI configuration options</param>
@@ -351,6 +355,7 @@ public class OpenAIService : IOpenAIService
         var fileSearchToolResources = new FileSearchToolResources();
         fileSearchToolResources.VectorStoreIds.Add(_vectorStoreId);
 
+        // 🔍 DEMO POINT: AGENT INSTANTIATION
         AssistantCreationOptions options = new AssistantCreationOptions
         {
             Name = "Woodgrove Assistant",
@@ -421,7 +426,8 @@ public class OpenAIService : IOpenAIService
                 Required = Array.Empty<string>()
             }, _serializerOptions)
         };
-            
+        
+        // 🔍 DEMO POINT: ADDS TOOLS TO OPTIONS
         // Initialize the read-only Tools property separately
         options.Tools.Add(CustomAPITool);
         options.Tools.Add(GetDateTimeTool);
@@ -430,23 +436,18 @@ public class OpenAIService : IOpenAIService
         // 🔍 DEMO POINT: FILE SEARCH TOOL
         options.Tools.Add(ToolDefinition.CreateFileSearch(5));
 
-    
-        // Usa tu experto para crear el assistant
+        // 🔍 DEMO POINT: CREATES AGENT WITH OPTIONS
+        // Create the asistnt using options
         _currentAssistant = await _assistantClient.CreateAssistantAsync(_gptModel, options);
 
-
-        // Y crea un thread inicial para esta instancia/usuario
+        // Creates a thread
         _currentThread = await _assistantClient.CreateThreadAsync();
     }
 
     /// <summary>
     /// Gets or creates a vector store for API documentation
-    /// </summary>
     /// <returns>The vector store</returns>
-        /// <summary>
-    /// Gets or creates a vector store for API documentation.
     /// </summary>
-    /// <returns>The vector store used for RAG functionality</returns>
     private async Task<VectorStore> GetVectorStoreAsync()
     {
         try
@@ -476,6 +477,7 @@ public class OpenAIService : IOpenAIService
                 // Create a new vector store
                 var ragFile = await GetApiDocsFileAsync();
                 
+                // 🔍 DEMO POINT: TOKENS PER CHUNK + OVERLAPP FOR RAG
                 var chunkingStrategy = FileChunkingStrategy.CreateStaticStrategy(
                     maxTokensPerChunk: _ragOptions.MaxTokensPerChunk,
                     overlappingTokenCount: _ragOptions.OverlappingTokenCount);
@@ -694,8 +696,7 @@ public class OpenAIService : IOpenAIService
                                         var responseInfo = new Dictionary<string, string>
                                         {
                                             ["code"] = responseCode,
-                                            ["description"] = responseData.ContainsKey("description") ? 
-                                                responseData["description"]?.ToString() : ""
+                                            ["description"] = responseData.ContainsKey("description") ? responseData["description"]?.ToString() : ""
                                         };
                                         
                                         responseList.Add(responseInfo);
@@ -747,7 +748,8 @@ public class OpenAIService : IOpenAIService
         
         return new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
     }
-      /// <summary>
+    
+    /// <summary>
     /// Processes a schema definition from OpenAPI specification into a structured dictionary.
     /// </summary>
     /// <param name="schemaData">The schema data from the OpenAPI specification</param>
@@ -755,45 +757,45 @@ public class OpenAIService : IOpenAIService
     private Dictionary<string, object> ProcessSchema(Dictionary<object, object> schemaData)
     {
         var result = new Dictionary<string, object>();
-        
+
         if (schemaData.ContainsKey("type"))
             result["type"] = schemaData["type"]?.ToString();
-            
+
         if (schemaData.ContainsKey("description"))
             result["description"] = schemaData["description"]?.ToString();
-            
+
         if (schemaData.ContainsKey("required") && schemaData["required"] is List<object> requiredProps)
             result["required"] = requiredProps.Select(p => p?.ToString()).ToList();
-            
+
         if (schemaData.ContainsKey("properties") && schemaData["properties"] is Dictionary<object, object> props)
         {
             var properties = new Dictionary<string, Dictionary<string, string>>();
-            
+
             foreach (var prop in props)
             {
                 var propName = prop.Key.ToString();
                 var propData = prop.Value as Dictionary<object, object>;
-                
+
                 if (propData != null)
                 {
                     var propInfo = new Dictionary<string, string>
                     {
                         ["type"] = propData.ContainsKey("type") ? propData["type"]?.ToString() : "string"
                     };
-                    
+
                     if (propData.ContainsKey("description"))
                         propInfo["description"] = propData["description"]?.ToString();
-                        
+
                     if (propData.ContainsKey("format"))
                         propInfo["format"] = propData["format"]?.ToString();
-                        
+
                     properties[propName] = propInfo;
                 }
             }
-            
+
             result["properties"] = properties;
         }
-        
+
         return result;
     }
 
@@ -851,7 +853,7 @@ public class OpenAIService : IOpenAIService
         {
             userId = userClaims.ContainsKey("sub") ? userClaims["sub"].ToString() : userClaims["oid"].ToString();        }
 
-        // 1) Create the user message in the thread
+        //Create the user message in the thread
         List<MessageContent> messageContents = [userMessage];
         await _assistantClient.CreateMessageAsync(
             _currentThread.Id, 
@@ -860,7 +862,7 @@ public class OpenAIService : IOpenAIService
             new MessageCreationOptions(), 
             cancellationToken);
 
-        // 2) Start the streaming response
+        //tart the streaming response
         var runOptions = new RunCreationOptions();
         var asyncUpdates = _assistantClient.CreateRunStreamingAsync(
             _currentThread.Id, 
@@ -878,39 +880,41 @@ public class OpenAIService : IOpenAIService
             var outputsToSubmit = new List<ToolOutput>();
 
             await foreach (var update in asyncUpdates.WithCancellation(cancellationToken))
-            {                switch (update)
+            {
+                switch (update)
                 {
                     case RequiredActionUpdate requiredActionUpdate:
-                    {
-                        // Process tool call requests from the assistant
-                        var toolOutput = await GetResolvedToolOutput(
-                            requiredActionUpdate.ToolCallId,
-                            requiredActionUpdate.FunctionName,
-                            requiredActionUpdate.FunctionArguments
-                        );
-                        outputsToSubmit.Add(toolOutput);
-                        break;
-                    }
-                    case MessageContentUpdate contentUpdate:
-                    {
-                        // Stream the text as-is - it already comes in markdown format from the model
-                        var partialText = contentUpdate.Text;
-                        fullAssistantResponse.Append(partialText);
-                        yield return partialText;
-                        break;
-                    }
-                    case RunUpdate runUpdate:
-                    {
-                        currentRun = runUpdate.Value;
-                        
-                        // If the run failed, report error with markdown formatting
-                        if (runUpdate.UpdateKind == StreamingUpdateReason.RunFailed && runUpdate.Value.LastError != null)
                         {
-                            var errorText = $"\n❌ **Error:** {runUpdate.Value.LastError.Message}";
-                            fullAssistantResponse.Append(errorText);
-                            yield return errorText;
-                        }                        break;
-                    }
+                            // Process tool call requests from the assistant
+                            var toolOutput = await GetResolvedToolOutput(
+                                requiredActionUpdate.ToolCallId,
+                                requiredActionUpdate.FunctionName,
+                                requiredActionUpdate.FunctionArguments
+                            );
+                            outputsToSubmit.Add(toolOutput);
+                            break;
+                        }
+                    case MessageContentUpdate contentUpdate:
+                        {
+                            // Stream the text as-is - it already comes in markdown format from the model
+                            var partialText = contentUpdate.Text;
+                            fullAssistantResponse.Append(partialText);
+                            yield return partialText;
+                            break;
+                        }
+                    case RunUpdate runUpdate:
+                        {
+                            currentRun = runUpdate.Value;
+
+                            // If the run failed, report error with markdown formatting
+                            if (runUpdate.UpdateKind == StreamingUpdateReason.RunFailed && runUpdate.Value.LastError != null)
+                            {
+                                var errorText = $"\n❌ **Error:** {runUpdate.Value.LastError.Message}";
+                                fullAssistantResponse.Append(errorText);
+                                yield return errorText;
+                            }
+                            break;
+                        }
                 }
             }
 
@@ -928,7 +932,8 @@ public class OpenAIService : IOpenAIService
                     );
                 }
                 catch (Exception ex)
-                {                    // Capture the error to handle it outside the loop
+                {
+                    // Capture the error to handle it outside the loop
                     errorOccurred = true;
                     errorMessage = $"\n❌ **Error al procesar herramientas:** {ex.Message}";
                     fullAssistantResponse.Append(errorMessage);
@@ -977,6 +982,7 @@ public class OpenAIService : IOpenAIService
         {
             switch (functionName)
             {
+                // 🔍 DEMO POINT: READ OUTPUT FROM API CALL 
                 case customAPIFunctionName:
                     {
                         var requestParameters = JsonSerializer.Deserialize<CustomAPIParameters>(functionArguments, _serializerOptions);
@@ -1022,8 +1028,7 @@ public class OpenAIService : IOpenAIService
         }
         catch (Exception ex)
         {
-            // Captura cualquier error y devuélvelo como un resultado JSON válido
-            // para que el Assistant pueda procesar el error apropiadamente
+            // Captures any error and returns it as json
             var errorResponse = JsonSerializer.Serialize(new {
                 error = new {
                     code = ex.GetType().Name,
@@ -1033,7 +1038,9 @@ public class OpenAIService : IOpenAIService
             
             return new ToolOutput(toolCallId, errorResponse);
         }
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Updates the user's access token in the existing service.
     /// This allows the service to make authenticated requests on behalf of the updated user identity.
     /// </summary>

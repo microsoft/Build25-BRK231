@@ -37,7 +37,8 @@ public class AssistantController : ControllerBase
     /// <returns>An action result containing the assistant's response or an error message</returns>
     /// <response code="200">Returns the assistant's response</response>
     /// <response code="500">If there was an error processing the message</response>
-    [HttpPost("send")]    public async Task<IActionResult> SendMessage([FromBody] string userMessage)
+    [HttpPost("send")]
+    public async Task<IActionResult> SendMessage([FromBody] string userMessage)
     {
         try
         {

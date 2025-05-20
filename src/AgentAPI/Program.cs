@@ -59,7 +59,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             {
                 // First try to get token from Authorization header (for HTTP and WebSocket negotiation)
                 string? token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-                  // If token not found in header, try query string (as fallback for WebSockets)
+
+                //TODO: Make sure if this makes sense to keep
+                // If token not found in header, try query string (as fallback for WebSockets)
                 if (string.IsNullOrEmpty(token))
                 {
                     token = context.Request.Query["access_token"];
@@ -139,10 +141,6 @@ builder.Services.AddSwaggerGen();            // Swagger generator for API docume
 
 // Build the web application
 var app = builder.Build();
-
-/// <summary>
-/// Configure the HTTP request pipeline with middleware components
-/// </summary>
 
 /// <summary>
 /// Configure the HTTP request pipeline with middleware components

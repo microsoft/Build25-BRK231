@@ -45,6 +45,7 @@ public class AssistantHub : Hub
         // Get the token from the Authorization header
         string? token = Context.GetHttpContext()?.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
+        //TODO: Review if this is correct!
         // If not found in header, try query string (used for WebSocket connections)
         if (string.IsNullOrEmpty(token))
         {

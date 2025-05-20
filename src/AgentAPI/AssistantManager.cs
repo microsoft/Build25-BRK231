@@ -60,7 +60,9 @@ public class InMemoryAssistantManager : IAssistantManager
         _customAPIOptions = customAPIOptions;
         _ragOptions = ragOptions;
         _customAPIHelper = customAPIHelper;
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Gets an existing OpenAI service for a user from the cache or creates a new one.
     /// This method ensures each user has a dedicated, properly initialized OpenAI service
     /// instance while efficiently managing resources through caching.
@@ -79,7 +81,7 @@ public class InMemoryAssistantManager : IAssistantManager
     {
         // Extract the userId from the access token
         string userId = await ExtractUserIdFromTokenAsync(userToken);
-        
+
         // Check if a service already exists in the cache
         if (_cache.TryGetValue<IOpenAIService>(userId, out var existingService))
         {
@@ -89,7 +91,7 @@ public class InMemoryAssistantManager : IAssistantManager
                 // Update the token directly in the existing service
                 openAIService.UpdateUserToken(userToken);
             }
-            
+
             return existingService;
         }
 
@@ -103,7 +105,9 @@ public class InMemoryAssistantManager : IAssistantManager
         _cache.Set(userId, service, TimeSpan.FromHours(4));
 
         return service;
-    }    /// <summary>
+    }   
+    
+     /// <summary>
     /// Extracts the unique user identifier from the JWT access token.
     /// This method parses and processes the JWT token to find the appropriate
     /// claim containing the user's identity.
@@ -141,7 +145,7 @@ public class InMemoryAssistantManager : IAssistantManager
             // or "sub" (subject) in other providers
             var oidClaim = token.Claims.FirstOrDefault(c => c.Type == "oid");
             var subClaim = token.Claims.FirstOrDefault(c => c.Type == "sub");
-            
+
             string? userId = null;
             if (oidClaim != null)
             {
@@ -151,7 +155,7 @@ public class InMemoryAssistantManager : IAssistantManager
             {
                 userId = subClaim.Value;
             }
-        
+
             if (userId == null)
             {
                 throw new Exception("Could not find 'oid' or 'sub' claim in the token.");

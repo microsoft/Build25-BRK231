@@ -26,7 +26,9 @@ public class TokenHelpers
             .WithClientSecret(clientSecret)
             .WithAuthority($"{authority}{tenantId}")
             .Build();
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Gets a token using the On-Behalf-Of (OBO) flow. This method delegates
     /// the user's identity to another service by exchanging the original token
     /// for a new token with different resource access.
@@ -60,19 +62,19 @@ public class TokenHelpers
             // This helps troubleshoot authentication issues during development and in production
             Debug.WriteLine($"Error in GetTokenOnBehalfOfAsync: {ex.Message}");
             Console.WriteLine($"Error getting OBO token: {ex.GetType().Name}: {ex.Message}");
-            
+
             if (ex.InnerException != null)
             {
                 Debug.WriteLine($"Inner exception: {ex.InnerException.Message}");
                 Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
             }
-            
+
             // In a real production environment, you would implement more robust error handling:
             // - Retry logic with exponential backoff for transient failures
             // - Telemetry capture for monitoring authentication issues
             // - User-friendly error messages based on exception types
             // - Circuit breakers to prevent cascading failures
-            
+
             // Return a placeholder error token instead of throwing an exception
             // This allows the application to gracefully handle auth failures
             return "error-obtaining-token"; // In production, consider throwing a custom exception

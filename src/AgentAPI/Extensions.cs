@@ -62,7 +62,8 @@ public static partial class Extensions
     /// <param name="items">The collection of items to check against</param>
     /// <returns>True if the item is in the collection, false otherwise</returns>
     public static bool In<T>(this T? item, params T[] items) => item.In((IEnumerable<T>)items);
-      /// <summary>
+
+    /// <summary>
     /// Checks if an item is in an enumerable collection
     /// </summary>
     /// <typeparam name="T">The type of the items</typeparam>

@@ -381,33 +381,31 @@ Licensed under the MIT license. *@
                 if (urlParams.has('returnedFromMFA')) {
                     console.log('Detected return from MFA verification');
                     
-                    // Si regresamos de MFA, necesitamos reinicializar la conexión
-                    // con el nuevo token de acceso actualizado después de MFA
+
+                    // If comming back from MFA we need to update
+                    // the token with the new one containing MFA claim
                     if (window.chatManager) {
                         console.log('Refreshing chat connection with new access token');
                         
-                        // Primero guardamos el historial existente si hay alguno
+                        // Store conversation 
                         if (window.chatManager.messages && window.chatManager.messages.length > 0) {
                             window.chatManager.saveChatHistory();
                         }
                         
-                        // Cerramos la conexión anterior y creamos una nueva con el token actualizado
+                        // Close the previous connection and create a new one with the new token
                         (async function() {
                             try {
-                                // Cerrar la conexión existente
                                 if (window.chatManager.connection) {
                                     await window.chatManager.connection.stop();
                                     console.log('Previous connection closed');
                                 }
                                 
-                                // Actualizar el token de acceso en el chatManager
                                 window.chatManager.accessToken = '@Model.AccessToken';
                                 
-                                // Reiniciar la conexión con el nuevo token
                                 await window.chatManager.initializeConnection();
                                 console.log('Connection reinitialized with updated token after MFA');
                                 
-                                // Eliminar el parámetro returnedFromMFA de la URL para evitar reinicializaciones redundantes
+                                // Remove the parameter returnedFromMFA to avoid redundant reinitializations
                                 const url = new URL(window.location);
                                 url.searchParams.delete('returnedFromMFA');
                                 window.history.replaceState({}, '', url);
@@ -429,7 +427,7 @@ Licensed under the MIT license. *@
                 const span = document.getElementsByClassName('tokens-close')[0];
                 
                 // Open modal when button is clicked
-                if (btn) { // Añadido verificación para evitar errores si el botón no existe
+                if (btn) { 
                     btn.onclick = function() {
                         modal.style.display = "block";
                     }
@@ -438,7 +436,7 @@ Licensed under the MIT license. *@
                 }
                 
                 // Close modal when clicking on X
-                if (span) { // Añadido verificación para evitar errores
+                if (span) { 
                     span.onclick = function() {
                         modal.style.display = "none";
                     }
@@ -499,9 +497,8 @@ Licensed under the MIT license. *@
                 const mfaClose = document.getElementsByClassName('mfa-close')[0];
                 const mfaForm = document.getElementById('mfa-form');
                 
-                // Establecer la URL correcta del formulario al cargar la página
+                // Stablish the correct URL for the form at page load
                 if (mfaForm) {
-                    // Obtener la URL base de la aplicación
                     const baseUrl = window.location.origin;
                     mfaForm.action = baseUrl + '/StepUp';
                     console.log("MFA form action set to:", mfaForm.action);
@@ -511,8 +508,8 @@ Licensed under the MIT license. *@
                 window.showMfaVerification = function(action, returnUrl = '/Protected?returnedFromMFA=true') {
                     const mfaModal = document.getElementById('mfa-modal');
                     
-                    // Ya que el usuario será redirigido para la verificación MFA,
-                    // nos aseguramos de que el historial del chat esté guardado en localStorage
+                    // Given that the user will be redireted to MFA check
+                    // store chat history in localstorage
                     if (window.chatManager) {
                         console.log('Saving chat history before MFA verification');
                         window.chatManager.saveChatHistory();
@@ -563,19 +560,16 @@ Licensed under the MIT license. *@
                 // Setup form submit handler to validar el envío
                 if (mfaForm) {
                     mfaForm.addEventListener('submit', function(e) {
-                        // Vamos a mostrar un log de lo que estamos enviando
                         console.log("Submitting MFA form to:", this.action);
                         console.log("With action:", document.getElementById('mfa-action').value);
                         console.log("Return URL:", document.getElementById('mfa-return-url').value);
                         
-                        // Guardar el historial del chat antes de la redirección
+                        // Save chat historial before submitting
                         if (window.chatManager) {
                             console.log('Saving chat history before submitting MFA form');
                             window.chatManager.saveChatHistory();
                         }
                         
-                        // No necesitamos prevenir el comportamiento por defecto
-                        // el formulario se enviará normalmente a la URL configurada
                     });
                 }
             });

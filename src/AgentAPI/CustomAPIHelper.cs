@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
+using Azure.Identity;
 using Microsoft.Extensions.Options;
 using MyOpenAIWebApi.Options;
 
@@ -145,6 +146,7 @@ public class CustomAPIHelper
         /// Creates a new HttpClient with appropriate default headers
         /// </summary>
         /// <returns>Configured HttpClient instance</returns>
+        /// TODO: Check if this could lead to port exhaustion
         public static HttpClient Create()
         {
             var client = new HttpClient();
@@ -177,14 +179,16 @@ public class CustomAPIHelper
         }
     }
 
+    //TODO: Add documentation comments
     public async Task<string> ExecuteQuery(CustomAPIParameters requestParameters, string userToken)
     {
+        // 🔍 DEMO POINT: Calls the token helper to get a new access token 
         // Get the token based on the provided scopes
-        _apiClient.DefaultRequestHeaders.Authorization = new("Bearer", 
-            await _tokenHelper.GetTokenOnBehalfOfAsync(userToken, requestParameters.Scopes));     
+        _apiClient.DefaultRequestHeaders.Authorization = new("Bearer",
+            await _tokenHelper.GetTokenOnBehalfOfAsync(userToken, requestParameters.Scopes));
 
         Debug.WriteLine($"Generated Url: {requestParameters.Method} {requestParameters.Uri}");
-        
+
         if (++CurrentRequestCount >= MaxRequests)
         {
             var error = FormatErrorMessage("ClientRequestException",
@@ -192,13 +196,14 @@ public class CustomAPIHelper
             OutputError(error);
             return error;
         }
-        
+
         var content = requestParameters.Method == "GET"
             ? await HandleRead(requestParameters.FixedBaseUri)
             : await HandleWrite(requestParameters);
         return content;
     }
 
+    //TODO: Add documentation comments
     // Overload that automatically uses the configured base URL
     public async Task<string> ExecuteQuery(string method, string relativeUri, string? body, bool writeConfirmed, string[] scopes, string userToken)
     {
@@ -206,6 +211,7 @@ public class CustomAPIHelper
         return await ExecuteQuery(parameters, userToken);
     }
 
+    //TODO: Add documentation comments
     private async Task<string> HandleRead(string uri)
     {
         var urlParts = uri.Split('?');
@@ -223,6 +229,7 @@ public class CustomAPIHelper
             parameters = parsedQueryString.AllKeys.ToDictionary(key => key!.ToLower(), key => parsedQueryString[key]!);
         }
 
+        //TODO: CHECK IF THIS IS TRUE OR ONLY GRAPH SPECIFIC
         // OData parameter management
         if (parameters.TryGetValue("$expand", out var expandValue) && expandValue.Contains("$filter"))
         {
@@ -239,9 +246,9 @@ public class CustomAPIHelper
         {
             var key = kvp.Key;
             var value = kvp.Value;
-            
+
             // Special handling for $filter with functions like contains(), startswith(), etc.
-            if (key == "$filter" && 
+            if (key == "$filter" &&
                (value.Contains("contains(") || value.Contains("startswith(") || value.Contains("endswith(")))
             {
                 // Preserve the $filter as it is, avoiding re-encoding
@@ -268,6 +275,8 @@ public class CustomAPIHelper
         return content;
     }
 
+
+    //TODO: Add documentation comments
     private void OutputError(string content)
     {
         try
@@ -286,6 +295,7 @@ public class CustomAPIHelper
         }
     }
 
+    //TODO: Add documentation comments
     private async Task<string> HandleWrite(CustomAPIParameters requestParameters)
     {
         if (!requestParameters.WriteConfirmed)
