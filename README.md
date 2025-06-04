@@ -20,7 +20,7 @@ IDNA
 |:-------------------|:----------------------------------|:-------------------|
 | Build session page | https://build.microsoft.com/sessions/BRK231 | Event session page with downloadable recording, slides, resources, and speaker bio |
 | Session recording on YouTube | https://aka.ms/build2025/video/BRK231 | YouTube page with session recoding and speaker-moderated chat |
-|Microsoft Learn|https://aka.ms/build25/plans/friendlyname<br>https://aka.ms/build25/collection/friendlyname|Official Collection or Plan with skilling resources to learn at your own pace|
+|Microsoft Learn|https://learn.microsoft.com/security|Official Collection or Plan with skilling resources to learn at your own pace|
 
 
 ## Contributing
